@@ -7,21 +7,12 @@ use Cosmic5173\WebAPI\request\types\{GetRequest, PostRequest, PutRequest, Delete
 
 final class RequestHandler {
 
-    private static RequestHandler $instance;
     private RequestThreadPool $threadPool;
     /** @var \Closure[] */
     private array $handlers = [];
     public int $requests = 0;
 
-    /**
-     * @return \Cosmic5173\WebAPI\request\RequestHandler
-     */
-    public static function getInstance(): RequestHandler {
-        return self::$instance;
-    }
-
     public function __construct(RequestThreadPool $threadPool) {
-        self::$instance = $this;
         $this->threadPool = $threadPool;
     }
 
@@ -30,22 +21,6 @@ final class RequestHandler {
      */
     public function getThreadPool(): RequestThreadPool {
         return $this->threadPool;
-    }
-
-    public static function createGetRequest(string $url, array $headers = [], array $params = []): GetRequest {
-        return new GetRequest($url, $headers, $params);
-    }
-
-    public static function createPostRequest(string $url, array $headers = [], array $params = []): PostRequest {
-        return new PostRequest($url, $headers, $params);
-    }
-
-    public static function createPutRequest(string $url, array $headers = [], string $payload = ""): PutRequest {
-        return new PutRequest($url, $headers, $payload);
-    }
-
-    public static function createDeleteRequest(string $url, array $headers = [], array $params = []): DeleteRequest {
-        return new DeleteRequest($url, $headers, $params);
     }
 
     public function sendGetRequest(GetRequest $request, \Closure $closure = null): void {

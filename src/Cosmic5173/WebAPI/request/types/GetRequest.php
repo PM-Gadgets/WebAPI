@@ -9,6 +9,10 @@ class GetRequest extends Request {
 
     private array $params;
 
+    public static function createGetRequest(string $url, array $headers = [], array $params = []): GetRequest {
+        return new GetRequest($url, $headers, $params);
+    }
+
     public function __construct($url, array $headers = [], array $params = []) {
         parent::__construct($url, $headers);
         $this->params = $params;

@@ -9,6 +9,10 @@ class PutRequest extends Request {
 
     private string $payload;
 
+    public static function createPutRequest(string $url, array $headers = [], string $payload = ""): PutRequest {
+        return new PutRequest($url, $headers, $payload);
+    }
+
     public function __construct(string $url, array $headers, string $payload) {
         parent::__construct($url, $headers);
         $this->payload = $payload;
