@@ -10,6 +10,9 @@ use pocketmine\plugin\PluginBase;
 final class WebAPIHandler extends PluginBase {
 
     public static function create(int $workerCount = 1): RequestHandler {
-        return new RequestHandler(new RequestThreadPool(RequestThread::createFactory(), $workerCount));
+        $pool = new RequestThreadPool(RequestThread::createFactory(), $workerCount);
+        $handler = new RequestHandler($pool);
+        $pool->setHandler($handler);
+        return $handler;
     }
 }

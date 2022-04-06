@@ -5,6 +5,7 @@ namespace Cosmic5173\WebAPI\thread;
 use Cosmic5173\WebAPI\request\RequestMode;
 use pocketmine\snooze\SleeperNotifier;
 use pocketmine\thread\Thread;
+use pocketmine\utils\Internet;
 
 class RequestThread extends Thread {
 
@@ -30,48 +31,64 @@ class RequestThread extends Thread {
 
     protected function onRun(): void {
         while (true) {
-            $row = $this->bufferSend->fetchRequest();
-            if (!is_string($row)) {
-                break;
-            }
-            $this->busy = true;
-            [$requestId, $requestUrl, $mode, $requestParams, $requestData, $requestHeaders] = unserialize($row, ["allowed_classes" => true]);
+            try {
+                $row = $this->bufferSend->fetchRequest();
+                if (!is_string($row)) {
+                    break;
+                }
+                $this->busy = true;
+                [$requestId, $requestUrl, $mode, $requestParams, $requestData, $requestHeaders] = unserialize($row, ["allowed_classes" => true]);
 
-            $curl = curl_init();
-            switch ($mode) {
-                case RequestMode::GET:
-                    curl_setopt($curl, CURLOPT_URL, $requestUrl. "?" . http_build_query($requestParams));
-                    break;
-                case RequestMode::POST:
-                    curl_setopt_array($curl, [
-                        CURLOPT_URL => $requestUrl,
-                        CURLOPT_POST => true,
-                        CURLOPT_POSTFIELDS => $requestData,
-                    ]);
-                    break;
-                case RequestMode::PUT:
-                    curl_setopt_array($curl, [
-                        CURLOPT_URL => $requestUrl,
-                        CURLOPT_CUSTOMREQUEST => "PUT",
-                        CURLOPT_POSTFIELDS => $requestData,
-                    ]);
-                    break;
-                case RequestMode::DELETE:
-                    curl_setopt_array($curl, [
-                        CURLOPT_URL => $requestUrl. "?" . http_build_query($requestParams),
-                        CURLOPT_CUSTOMREQUEST => "DELETE",
-                    ]);
-                    break;
-            }
-            if (!empty($requestHeaders))
-                curl_setopt($curl, CURLOPT_HTTPHEADER, $requestHeaders);
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            $response = curl_exec($curl);
-            curl_close($curl);
+                $url = match ($mode) {
+                    RequestMode::GET, RequestMode::DELETE => $requestUrl."?".http_build_query($requestParams),
+                    default => $requestUrl
+                };
+                $curl = curl_init($url);
+                curl_setopt($curl, CURLOPT_URL, $url);
 
-            $this->bufferRecv->publishResult($requestId, $response ? $response : null);
-            $this->notifier->wakeupSleeper();
-            $this->busy = false;
+                switch ($mode) {
+                    case RequestMode::POST:
+                        curl_setopt_array($curl, [
+                            CURLOPT_URL => $requestUrl,
+                            CURLOPT_POST => true,
+                            CURLOPT_POSTFIELDS => $requestData,
+                        ]);
+                        break;
+                    case RequestMode::PUT:
+                        curl_setopt_array($curl, [
+                            CURLOPT_URL => $requestUrl,
+                            CURLOPT_CUSTOMREQUEST => "PUT",
+                            CURLOPT_POSTFIELDS => $requestData,
+                        ]);
+                        break;
+                    case RequestMode::DELETE:
+                        curl_setopt_array($curl, [
+                            CURLOPT_URL => $requestUrl."?".http_build_query($requestParams),
+                            CURLOPT_CUSTOMREQUEST => "DELETE",
+                        ]);
+                        break;
+                }
+                if (!empty($requestHeaders)) {
+                    curl_setopt($curl, CURLOPT_HTTPHEADER, $requestHeaders);
+                } else {
+                    curl_setopt($curl, CURLOPT_HEADER, false);
+                }
+
+                curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+
+                $resp = curl_exec($curl);
+                curl_close($curl);
+
+                $this->bufferRecv->publishResult($requestId, $resp ? $resp : null);
+                $this->notifier->wakeupSleeper();
+                $this->busy = false;
+            } catch (\Exception $e) {
+                $this->bufferRecv->publishResult($requestId, null);
+                $this->notifier->wakeupSleeper();
+                $this->busy = false;
+            }
         }
     }
 
