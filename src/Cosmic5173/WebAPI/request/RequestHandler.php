@@ -4,6 +4,7 @@ namespace Cosmic5173\WebAPI\request;
 
 use Cosmic5173\WebAPI\thread\RequestThreadPool;
 use Cosmic5173\WebAPI\request\types\{GetRequest, PostRequest, PutRequest, DeleteRequest};
+use pocketmine\Server;
 
 final class RequestHandler {
 
@@ -25,28 +26,48 @@ final class RequestHandler {
 
     public function sendGetRequest(GetRequest $request, \Closure $closure = null): void {
         $requestId = $this->requests++;
-        $this->handlers[$requestId] = $closure;
+        $startTime = microtime(true);
+        Server::getInstance()->getLogger()->debug("[WebAPI] Request #$requestId created.");
+        $this->handlers[$requestId] = static function (?string $response = null) use ($closure, $startTime, $requestId) {
+            Server::getInstance()->getLogger()->debug("[WebAPI] Request #$requestId completed in " . (microtime(true) - $startTime) . " seconds.");
+            if (isset($closure)) $closure($response);
+        };
 
         $this->threadPool->addRequest($requestId, $request->getUrl(), $request->getMode(), $request->getParams(), "", $request->getHeaders());
     }
 
     public function sendPostRequest(PostRequest $request, \Closure $closure = null): void {
         $requestId = $this->requests++;
-        $this->handlers[$requestId] = $closure;
+        $startTime = microtime(true);
+        Server::getInstance()->getLogger()->debug("[WebAPI] Request #$requestId created.");
+        $this->handlers[$requestId] = static function (?string $response = null) use ($closure, $startTime, $requestId) {
+            Server::getInstance()->getLogger()->debug("[WebAPI] Request #$requestId completed in " . (microtime(true) - $startTime) . " seconds.");
+            if (isset($closure)) $closure($response);
+        };
 
         $this->threadPool->addRequest($requestId, $request->getUrl(), $request->getMode(), [], json_encode($request->getParams()), $request->getHeaders());
     }
 
     public function sendPutRequest(PutRequest $request, \Closure $closure = null): void {
         $requestId = $this->requests++;
-        $this->handlers[$requestId] = $closure;
+        $startTime = microtime(true);
+        Server::getInstance()->getLogger()->debug("[WebAPI] Request #$requestId created.");
+        $this->handlers[$requestId] = static function (?string $response = null) use ($closure, $startTime, $requestId) {
+            Server::getInstance()->getLogger()->debug("[WebAPI] Request #$requestId completed in " . (microtime(true) - $startTime) . " seconds.");
+            if (isset($closure)) $closure($response);
+        };
 
         $this->threadPool->addRequest($requestId, $request->getUrl(), $request->getMode(), [], $request->getPayload(), $request->getHeaders());
     }
 
     public function sendDeleteRequest(DeleteRequest $request, \Closure $closure = null): void {
         $requestId = $this->requests++;
-        $this->handlers[$requestId] = $closure;
+        $startTime = microtime(true);
+        Server::getInstance()->getLogger()->debug("[WebAPI] Request #$requestId created.");
+        $this->handlers[$requestId] = static function (?string $response = null) use ($closure, $startTime, $requestId) {
+            Server::getInstance()->getLogger()->debug("[WebAPI] Request #$requestId completed in " . (microtime(true) - $startTime) . " seconds.");
+            if (isset($closure)) $closure($response);
+        };
 
         $this->threadPool->addRequest($requestId, $request->getUrl(), $request->getMode(), $request->getParams(), "", $request->getHeaders());
     }

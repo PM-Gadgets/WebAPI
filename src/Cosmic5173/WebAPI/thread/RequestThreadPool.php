@@ -37,16 +37,6 @@ class RequestThreadPool {
 
     private function addWorker() : void{
         $this->workers[] = ($this->workerFactory)($this->notifier, $this->bufferSend, $this->bufferRecv);
-
-        // check if we need to increase worker amount
-        foreach($this->workers as $worker){
-            if(!$worker->isBusy()){
-                return;
-            }
-        }
-        if(count($this->workers) < $this->workerLimit){
-            $this->addWorker();
-        }
     }
 
     public function join() : void{
@@ -63,6 +53,16 @@ class RequestThreadPool {
 
     public function addRequest(int $requestId, string $requestUrl, int $mode, array $requestParams, array|string $requestData, array $requestHeaders): void {
         $this->bufferSend->scheduleRequest($requestId, $requestUrl, $mode, $requestParams, $requestData, $requestHeaders);
+
+        // check if we need to increase worker amount
+        foreach($this->workers as $worker){
+            if(!$worker->isBusy()){
+                return;
+            }
+        }
+        if(count($this->workers) < $this->workerLimit){
+            $this->addWorker();
+        }
     }
 
     public function readResults(array &$closures): void {
